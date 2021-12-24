@@ -1,8 +1,13 @@
-# Uniswap V2 Core - Casper Blockchain
+# CasperSwap - Uniswap V2 Core for the Casper Blockchain
 Implementation of `ERC20 Token`, `Pair` ,`Factory`, `Flash Swapper`, and `WCSPR` Contract for the CasperLabs platform.
 
-## Steps
-There are 5 contracts in this folder
+## Security Review Status
+![QuantstampSecured](https://s3-us-west-1.amazonaws.com/qsp-www-images/certificate-gh-badge.svg)
+
+[View Report - commit 801eaaedf4a5fe106cebdc157c82ac801fc04caa](RengoLabs-Report.pdf)
+
+## Contents
+There are 5 contracts in this repo
 1) ERC20 Token Contract
 2) Pair Contract
 3) Factory Contract
@@ -263,7 +268,7 @@ amount | U256
 
 
 This method **returns** nothing.
-<br>**Recommendation:** 
+<br>**Recommendation:**
 The exploit is mitigated through use of functions that increase/decrease the allowance relative to its current value, such as `increaseAllowance()` and `decreaseAllowance()`,
 Pending community agreement on an ERC standard that would protect against this exploit, we recommend that developers of applications dependent on approve() / transferFrom()
 should keep in mind that they have to set allowance to 0 first and verify if it was used before setting the new value.
@@ -300,7 +305,7 @@ spender | Key
 amount | U256
 
 This method **returns** nothing.
-<br>**Recommendation:** 
+<br>**Recommendation:**
 The exploit is mitigated through use of functions that increase/decrease the allowance relative to its current value, such as `increaseAllowance()` and `decreaseAllowance()`,
 Pending community agreement on an ERC standard that would protect against this exploit, we recommend that developers of applications dependent on approve() / transferFrom()
 should keep in mind that they have to set allowance to 0 first and verify if it was used before setting the new value.
@@ -456,7 +461,7 @@ amount | U256
 
 
 This method **returns** nothing.
-<br>**Recommendation:** 
+<br>**Recommendation:**
 The exploit is mitigated through use of functions that increase/decrease the allowance relative to its current value, such as `increaseAllowance()` and `decreaseAllowance()`,
 Pending community agreement on an ERC standard that would protect against this exploit, we recommend that developers of applications dependent on approve() / transferFrom()
 should keep in mind that they have to set allowance to 0 first and verify if it was used before setting the new value.
@@ -476,7 +481,7 @@ spender | Key
 amount | U256
 
 This method **returns** nothing.
-<br>**Recommendation:** 
+<br>**Recommendation:**
 The exploit is mitigated through use of functions that increase/decrease the allowance relative to its current value, such as `increaseAllowance()` and `decreaseAllowance()`,
 Pending community agreement on an ERC standard that would protect against this exploit, we recommend that developers of applications dependent on approve() / transferFrom()
 should keep in mind that they have to set allowance to 0 first and verify if it was used before setting the new value.
@@ -729,7 +734,7 @@ amount | U256
 
 
 This method **returns** nothing.
-<br>**Recommendation:** 
+<br>**Recommendation:**
 The exploit is mitigated through use of functions that increase/decrease the allowance relative to its current value, such as `increaseAllowance()` and `decreaseAllowance()`,
 Pending community agreement on an ERC standard that would protect against this exploit, we recommend that developers of applications dependent on approve() / transferFrom()
 should keep in mind that they have to set allowance to 0 first and verify if it was used before setting the new value.
@@ -774,7 +779,7 @@ spender | Key
 
 
 This method **returns** U256.
-<br>**Recommendation:** 
+<br>**Recommendation:**
 The exploit is mitigated through use of functions that increase/decrease the allowance relative to its current value, such as `increaseAllowance()` and `decreaseAllowance()`,
 Pending community agreement on an ERC standard that would protect against this exploit, we recommend that developers of applications dependent on approve() / transferFrom()
 should keep in mind that they have to set allowance to 0 first and verify if it was used before setting the new value.
