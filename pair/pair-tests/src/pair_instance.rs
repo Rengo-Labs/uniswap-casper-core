@@ -163,6 +163,16 @@ impl PAIRInstance {
             },
         );
     }
+    pub fn balance_with_caller<T: Into<Key>>(&self, sender: Sender, caller: T, owner: Key) {
+        self.0.call_contract(
+            sender,
+            "balance_with_caller",
+            runtime_args! {
+                "caller" => caller.into(),
+                "owner" => owner,
+            },
+        );
+    }
 
     pub fn approve<T: Into<Key>>(&self, sender: Sender, spender: T, amount: U256) {
         self.0.call_contract(
@@ -307,6 +317,9 @@ impl PAIRInstance {
 
     pub fn token1(&self) -> Key {
         self.0.query_named_key(String::from("token1"))
+    }
+    pub fn balance(&self) -> U256 {
+        self.0.query_named_key(String::from("balance"))
     }
 
     pub fn reserve0(&self) -> U128 {

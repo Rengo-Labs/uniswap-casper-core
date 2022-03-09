@@ -83,6 +83,26 @@ fn mint_with_caller() {
     );
 }
 
+
+#[no_mangle]
+fn balance_with_caller() {
+    let caller: Key = runtime::get_named_arg("caller");
+    let owner: Key = runtime::get_named_arg("owner");
+    let caller_hash_add_array = match caller {
+        Key::Hash(package) => package,
+        _ => runtime::revert(ApiError::UnexpectedKeyVariant),
+    };
+
+    let caller_hash_add = ContractHash::new(caller_hash_add_array);
+
+    let balance: U256 = runtime::call_contract(
+        caller_hash_add,
+        "balance_of",
+        runtime_args! {"owner" => owner},
+    );
+    mappings::set_key("balance",balance);
+}
+
 #[no_mangle]
 fn set_fee_to() {
     let fee_to: Key = runtime::get_named_arg("fee_to");
@@ -207,6 +227,17 @@ fn get_entry_points() -> EntryPoints {
         EntryPointAccess::Public,
         EntryPointType::Contract,
     ));
+    entry_points.add_entry_point(EntryPoint::new(
+        "balance_with_caller",
+        vec![
+            Parameter::new("caller", Key::cl_type()),
+            Parameter::new("owner", Key::cl_type()),
+        ],
+        <()>::cl_type(),
+        EntryPointAccess::Public,
+        EntryPointType::Contract,
+    ));
+    
     entry_points.add_entry_point(EntryPoint::new(
         "allowance",
         vec![

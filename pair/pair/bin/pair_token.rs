@@ -747,106 +747,133 @@ fn get_entry_points() -> EntryPoints {
 
 #[no_mangle]
 fn call() {
-    // Build new package with initial a first version of the contract.
-    let (package_hash, access_token) = storage::create_contract_package_at_hash();
-    let (contract_hash, _) =
-        storage::add_contract_version(package_hash, get_entry_points(), Default::default());
-    let name: String = runtime::get_named_arg("name");
-    let symbol: String = runtime::get_named_arg("symbol");
-    let decimals: u8 = runtime::get_named_arg("decimals");
-    let initial_supply: U256 = runtime::get_named_arg("initial_supply");
-    let callee_contract_hash: Key = runtime::get_named_arg("callee_contract_hash");
-    let factory_hash: Key = runtime::get_named_arg("factory_hash");
-    let eip_712_domain: &str =
-        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)";
-    let permit_type: &str =
-        "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)";
-    let chain_id: &str = "101";
-    let eip_domain_hash = keccak256(eip_712_domain.as_bytes()); // to take a byte hash of EIP712Domain
-    let name_hash = keccak256(name.as_bytes()); // to take a byte hash of name
-    let one_hash = keccak256("1".as_bytes()); // to take a byte hash of "1"
-    let eip_domain_hash = encode(eip_domain_hash); // to encode and convert eip_domain_hash into string
-    let name_hash = encode(name_hash); // to encode and convert name_hash into string
-    let one_hash = encode(one_hash); // to encode and convert one_hash into string
-    let concatenated_data: String = format!(
-        "{}{}{}{}{}",
-        eip_domain_hash, name_hash, one_hash, chain_id, contract_hash
-    ); //string contactination
-    let domain_separator = keccak256(concatenated_data.as_bytes()); //to take a byte hash of concatenated Data
-    let permit_type_hash = keccak256(permit_type.as_bytes()); // to take a byte hash of Permit Type
-    let domain_separator = encode(domain_separator);
-    let permit_type_hash = encode(permit_type_hash);
-    let base: i32 = 10;
-    let minimum_liquidity: U256 = (base.pow(3)).into();
-    let reserve0: U128 = 0.into();
-    let reserve1: U128 = 0.into();
-    let block_timestamp_last: u64 = 0;
-    let price0_cumulative_last: U256 = 0.into();
-    let price1_cumulative_last: U256 = 0.into();
-    let k_last: U256 = 0.into(); // reserve0 * reserve1, as of immediately after the most recent liquidity event
-    let treasury_fee: U256 = 3.into();
-    let lock: u64 = 0;
-    // Prepare constructor args
-    let constructor_args = runtime_args! {
-        "name" => name,
-        "symbol" => symbol,
-        "decimals" => decimals,
-        "initial_supply" => initial_supply,
-        "domain_separator" => domain_separator,
-        "permit_type_hash" => permit_type_hash,
-        "contract_hash" => contract_hash,
-        "package_hash"=>package_hash,
-        "reserve0" => reserve0,
-        "reserve1" => reserve1,
-        "block_timestamp_last" => block_timestamp_last,
-        "price0_cumulative_last" => price0_cumulative_last,
-        "price1_cumulative_last" => price1_cumulative_last,
-        "k_last" => k_last,
-        "treasury_fee" => treasury_fee,
-        "minimum_liquidity" => minimum_liquidity,
-        "callee_contract_hash" => callee_contract_hash,
-        "factory_hash" => factory_hash,
-        "lock"=>lock
-    };
 
-    // Add the constructor group to the package hash with a single URef.
-    let constructor_access: URef =
-        storage::create_contract_user_group(package_hash, "constructor", 1, Default::default())
-            .unwrap_or_revert()
-            .pop()
+    // Store contract in the account's named keys. Contract name must be same for all new versions of the contracts
+    let contract_name: alloc::string::String = runtime::get_named_arg("contract_name");
+    
+    // If this is the first deployment
+    if !runtime::has_key(&format!("{}_package_hash", contract_name)) {
+
+        // Build new package with initial a first version of the contract.
+        let (package_hash, access_token) = storage::create_contract_package_at_hash();
+        let (contract_hash, _) =
+            storage::add_contract_version(package_hash, get_entry_points(), Default::default());
+        let name: String = runtime::get_named_arg("name");
+        let symbol: String = runtime::get_named_arg("symbol");
+        let decimals: u8 = runtime::get_named_arg("decimals");
+        let initial_supply: U256 = runtime::get_named_arg("initial_supply");
+        let callee_contract_hash: Key = runtime::get_named_arg("callee_contract_hash");
+        let factory_hash: Key = runtime::get_named_arg("factory_hash");
+        let eip_712_domain: &str =
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)";
+        let permit_type: &str =
+            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)";
+        let chain_id: &str = "101";
+        let eip_domain_hash = keccak256(eip_712_domain.as_bytes()); // to take a byte hash of EIP712Domain
+        let name_hash = keccak256(name.as_bytes()); // to take a byte hash of name
+        let one_hash = keccak256("1".as_bytes()); // to take a byte hash of "1"
+        let eip_domain_hash = encode(eip_domain_hash); // to encode and convert eip_domain_hash into string
+        let name_hash = encode(name_hash); // to encode and convert name_hash into string
+        let one_hash = encode(one_hash); // to encode and convert one_hash into string
+        let concatenated_data: String = format!(
+            "{}{}{}{}{}",
+            eip_domain_hash, name_hash, one_hash, chain_id, contract_hash
+        ); //string contactination
+        let domain_separator = keccak256(concatenated_data.as_bytes()); //to take a byte hash of concatenated Data
+        let permit_type_hash = keccak256(permit_type.as_bytes()); // to take a byte hash of Permit Type
+        let domain_separator = encode(domain_separator);
+        let permit_type_hash = encode(permit_type_hash);
+        let base: i32 = 10;
+        let minimum_liquidity: U256 = (base.pow(3)).into();
+        let reserve0: U128 = 0.into();
+        let reserve1: U128 = 0.into();
+        let block_timestamp_last: u64 = 0;
+        let price0_cumulative_last: U256 = 0.into();
+        let price1_cumulative_last: U256 = 0.into();
+        let k_last: U256 = 0.into(); // reserve0 * reserve1, as of immediately after the most recent liquidity event
+        let treasury_fee: U256 = 3.into();
+        let lock: u64 = 0;
+        // Prepare constructor args
+        let constructor_args = runtime_args! {
+            "name" => name,
+            "symbol" => symbol,
+            "decimals" => decimals,
+            "initial_supply" => initial_supply,
+            "domain_separator" => domain_separator,
+            "permit_type_hash" => permit_type_hash,
+            "contract_hash" => contract_hash,
+            "package_hash"=>package_hash,
+            "reserve0" => reserve0,
+            "reserve1" => reserve1,
+            "block_timestamp_last" => block_timestamp_last,
+            "price0_cumulative_last" => price0_cumulative_last,
+            "price1_cumulative_last" => price1_cumulative_last,
+            "k_last" => k_last,
+            "treasury_fee" => treasury_fee,
+            "minimum_liquidity" => minimum_liquidity,
+            "callee_contract_hash" => callee_contract_hash,
+            "factory_hash" => factory_hash,
+            "lock"=>lock
+        };
+
+        // Add the constructor group to the package hash with a single URef.
+        let constructor_access: URef =
+            storage::create_contract_user_group(package_hash, "constructor", 1, Default::default())
+                .unwrap_or_revert()
+                .pop()
+                .unwrap_or_revert();
+
+        // Call the constructor entry point
+        let _: () =
+            runtime::call_versioned_contract(package_hash, None, "constructor", constructor_args);
+
+        // Remove all URefs from the constructor group, so no one can call it for the second time.
+        let mut urefs = BTreeSet::new();
+        urefs.insert(constructor_access);
+        storage::remove_contract_user_group_urefs(package_hash, "constructor", urefs)
             .unwrap_or_revert();
 
-    // Call the constructor entry point
-    let _: () =
-        runtime::call_versioned_contract(package_hash, None, "constructor", constructor_args);
+        // Store contract in the account's named keys.
+        runtime::put_key(
+            &format!("{}_package_hash", contract_name),
+            package_hash.into(),
+        );
+        runtime::put_key(
+            &format!("{}_package_hash_wrapped", contract_name),
+            storage::new_uref(package_hash).into(),
+        );
+        runtime::put_key(
+            &format!("{}_contract_hash", contract_name),
+            contract_hash.into(),
+        );
+        runtime::put_key(
+            &format!("{}_contract_hash_wrapped", contract_name),
+            storage::new_uref(contract_hash).into(),
+        );
+        runtime::put_key(
+            &format!("{}_package_access_token", contract_name),
+            access_token.into(),
+        );
+    }
+    else {          // this is a contract upgrade
 
-    // Remove all URefs from the constructor group, so no one can call it for the second time.
-    let mut urefs = BTreeSet::new();
-    urefs.insert(constructor_access);
-    storage::remove_contract_user_group_urefs(package_hash, "constructor", urefs)
-        .unwrap_or_revert();
+        let package_hash: ContractPackageHash = runtime::get_key(&format!("{}_package_hash", contract_name))
+                                                            .unwrap_or_revert()
+                                                            .into_hash()
+                                                            .unwrap()
+                                                            .into();
 
-    // Store contract in the account's named keys.
-    let contract_name: alloc::string::String = runtime::get_named_arg("contract_name");
+        let (contract_hash, _): (ContractHash, _) =
+        storage::add_contract_version(package_hash, get_entry_points(), Default::default());
 
-    runtime::put_key(
-        &format!("{}_package_hash", contract_name),
-        package_hash.into(),
-    );
-    runtime::put_key(
-        &format!("{}_package_hash_wrapped", contract_name),
-        storage::new_uref(package_hash).into(),
-    );
-    runtime::put_key(
-        &format!("{}_contract_hash", contract_name),
-        contract_hash.into(),
-    );
-    runtime::put_key(
-        &format!("{}_contract_hash_wrapped", contract_name),
-        storage::new_uref(contract_hash).into(),
-    );
-    runtime::put_key(
-        &format!("{}_package_access_token", contract_name),
-        access_token.into(),
-    );
+        // update contract hash
+        runtime::put_key(
+            &format!("{}_contract_hash", contract_name),
+            contract_hash.into(),
+        );
+        runtime::put_key(
+            &format!("{}_contract_hash_wrapped", contract_name),
+            storage::new_uref(contract_hash).into(),
+        );
+    }
 }

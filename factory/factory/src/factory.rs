@@ -32,12 +32,12 @@ impl FACTORYEvent {
 }
 #[repr(u16)]
 pub enum Error {
-    UniswapV2ZeroAddress = 0,
-    UniswapV2PairExists = 1,
-    UniswapV2Forbidden = 2,
-    UniswapV2IdenticalAddresses = 3,
-    UniswapV2NotInWhiteList = 4,
-    UniswapV2NotOwner = 5,
+    UniswapV2FactoryZeroAddress = 6,
+    UniswapV2FactoryPairExists = 7,
+    UniswapV2Forbidden = 8,
+    UniswapV2FactoryIdenticalAddresses = 9,
+    UniswapV2FactoryNotInWhiteList = 10,
+    UniswapV2FactoryNotOwner = 11,
 }
 
 impl From<Error> for ApiError {
@@ -73,7 +73,7 @@ pub trait FACTORY<Storage: ContractStorage>: ContractContext<Storage> {
             .unwrap()
         {
             if token_a == token_b {
-                runtime::revert(Error::UniswapV2IdenticalAddresses);
+                runtime::revert(Error::UniswapV2FactoryIdenticalAddresses);
             }
             let token0: Key;
             let token1: Key;
@@ -90,15 +90,15 @@ pub trait FACTORY<Storage: ContractStorage>: ContractContext<Storage> {
             }
             // in before 0 address was hash-0000000000000000000000000000000000000000000000000000000000000000
             if token0 == address_0 {
-                runtime::revert(Error::UniswapV2ZeroAddress);
+                runtime::revert(Error::UniswapV2FactoryZeroAddress);
             }
             let pair_0_1_key: Key = self.get_pair(token0, token1);
             let pair_1_0_key: Key = self.get_pair(token1, token0);
             if pair_0_1_key != address_0 {
-                runtime::revert(Error::UniswapV2PairExists);
+                runtime::revert(Error::UniswapV2FactoryPairExists);
             }
             if pair_1_0_key != address_0 {
-                runtime::revert(Error::UniswapV2PairExists);
+                runtime::revert(Error::UniswapV2FactoryPairExists);
             }
             //convert Key to ContractHash
             let pair_hash_add_array = match pair_hash {
@@ -124,7 +124,7 @@ pub trait FACTORY<Storage: ContractStorage>: ContractContext<Storage> {
                 all_pairs_length: (get_all_pairs().len()).into(),
             });
         } else {
-            runtime::revert(Error::UniswapV2NotInWhiteList);
+            runtime::revert(Error::UniswapV2FactoryNotInWhiteList);
         }
     }
 
@@ -170,7 +170,7 @@ pub trait FACTORY<Storage: ContractStorage>: ContractContext<Storage> {
         if self.get_caller() == data::get_owner() {
             Whitelists::instance().set(&white_list, value);
         } else {
-            runtime::revert(Error::UniswapV2NotOwner);
+            runtime::revert(Error::UniswapV2FactoryNotOwner);
         }
     }
     fn emit(&mut self, factory_event: &FACTORYEvent) {

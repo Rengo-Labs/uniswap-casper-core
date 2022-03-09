@@ -1,9 +1,70 @@
+use crate::alloc::string::ToString;
 use alloc::string::String;
 use casper_contract::contract_api::runtime;
 use casper_contract::unwrap_or_revert::UnwrapOrRevert;
-use casper_types::{ApiError, ContractPackageHash, Key, URef, U256};
+use casper_types::{ApiError, ContractPackageHash, Key, URef, U256, U512};
 use contract_utils::{get_key, set_key, Dict};
 //use casper_contract::{value::account::PurseId ,contract_api::{runtime,system}, unwrap_or_revert::UnwrapOrRevert};
+
+
+
+
+// Events
+
+pub enum WcsprEvents {
+    Approval {
+        owner: Key,
+        spender: Key,
+        value: U256,
+    },
+
+    Transfer {
+        from: Key,
+        to: Key,
+        value: U256,
+    },
+
+    Deposit {
+        src_purse: URef,
+        amount: U512
+    },
+
+    Withdraw {
+        recipient_purse: URef,
+        amount: U512
+    }
+}
+
+impl WcsprEvents {
+    pub fn type_name(&self) -> String {
+        match self {
+            WcsprEvents::Approval{
+                owner: _,
+                spender: _,
+                value: _
+            } => "approve",
+
+            WcsprEvents::Transfer {
+                from: _,
+                to: _,
+                value: _,
+            } => "erc20_transfer",
+
+            WcsprEvents::Deposit {
+                src_purse: _,
+                amount: _
+            } => "deposit",
+            
+            WcsprEvents::Withdraw {
+                recipient_purse: _,
+                amount: _
+            } => "withdraw"
+        }.to_string()
+    }
+}
+
+
+
 
 pub const BALANCES_DICT: &str = "balances";
 pub const ALLOWANCES_DICT: &str = "allowances";
@@ -13,6 +74,8 @@ pub const SELF_CONTRACT_HASH: &str = "self_contract_hash";
 pub const SELF_PURSE: &str = "self_purse";
 pub const DECIMALS: &str = "decimals";
 pub const CONTRACT_PACKAGE_HASH: &str = "contract_package_hash";
+pub const TOTAL_SUPPLY: &str = "total_supply";
+
 
 #[repr(u16)]
 pub enum ErrorCodes {
@@ -118,4 +181,12 @@ pub fn set_package_hash(package_hash: ContractPackageHash) {
 
 pub fn get_package_hash() -> ContractPackageHash {
     get_key(CONTRACT_PACKAGE_HASH).unwrap_or_revert()
+}
+
+pub fn set_totalsupply(value: U256) {
+    set_key(TOTAL_SUPPLY, value);
+}
+
+pub fn get_totalsupply() -> U256 {
+    get_key(TOTAL_SUPPLY).unwrap_or_revert()
 }

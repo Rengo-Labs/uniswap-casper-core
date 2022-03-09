@@ -45,17 +45,27 @@ impl ERC20Event {
     }
 }
 
-/// Enum for FailureCode, It represents codes for different smart contract errors.
-#[repr(u32)]
-pub enum FailureCode {
-    /// 65,536 for (UniswapV2: EXPIRED)
-    Zero = 0,
-    /// 65,537 for (signature verification failed)
-    One,
-    /// 65,538 for (UniswapV2: OVERFLOW)
-    Two,
-    /// 65,539 for (UniswapV2: UNDERFLOW)
-    Three,
+#[repr(u16)]
+pub enum Error {
+    /// 65,536 for UniswapV2CoreERC20EXPIRED
+    UniswapV2CoreERC20EXPIRED = 0,
+    /// 65,537 for UniswapV2CoreERC20SignatureVerificatFailed
+    UniswapV2CoreERC20SignatureVerificatFailed = 1,
+    /// 65,539 for UniswapV2CoreERC20OverFlow
+    UniswapV2CoreERC20OverFlow = 2,
+    /// 65,539 for UniswapV2CoreERC20UnderFlow
+    UniswapV2CoreERC20UnderFlow1 = 3,
+    UniswapV2CoreERC20UnderFlow2 = 29,
+    UniswapV2CoreERC20UnderFlow3 = 30,
+    UniswapV2CoreERC20UnderFlow4 = 31,
+    UniswapV2CoreERC20UnderFlow5 = 32,
+    UniswapV2CoreERC20UnderFlow6 = 33,
+}
+
+impl From<Error> for ApiError {
+    fn from(error: Error) -> ApiError {
+        ApiError::User(error as u16)
+    }
 }
 
 pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
@@ -123,7 +133,7 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
 
         let new_allowance: U256 = spender_allowance
             .checked_add(amount)
-            .ok_or(ApiError::User(FailureCode::Zero as u16))
+            .ok_or(Error::UniswapV2CoreERC20OverFlow)
             .unwrap_or_revert();
 
         if new_allowance <= owner_balance && owner != spender {
@@ -143,7 +153,7 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
 
         let new_allowance: U256 = spender_allowance
             .checked_sub(amount)
-            .ok_or(ApiError::User(FailureCode::One as u16))
+            .ok_or(Error::UniswapV2CoreERC20UnderFlow1)
             .unwrap_or_revert();
 
         if new_allowance >= 0.into() && new_allowance < spender_allowance && owner != spender {
@@ -161,7 +171,7 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
             let spender_allowance: U256 = allowances.get(&owner, &self.get_caller());
             let new_allowance: U256 = spender_allowance
                 .checked_sub(amount)
-                .ok_or(ApiError::User(FailureCode::One as u16))
+                .ok_or(Error::UniswapV2CoreERC20UnderFlow2)
                 .unwrap_or_revert();
             if new_allowance >= 0.into()
                 && new_allowance < spender_allowance
@@ -275,11 +285,11 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
                 });
             } else {
                 //signature verification failed
-                runtime::revert(ApiError::User(FailureCode::One as u16));
+                runtime::revert(Error::UniswapV2CoreERC20SignatureVerificatFailed);
             }
         } else {
             //deadline is equal to or greater than blocktime
-            runtime::revert(ApiError::User(FailureCode::Zero as u16));
+            runtime::revert(Error::UniswapV2CoreERC20EXPIRED);
         }
     }
 
@@ -290,13 +300,13 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
             &recipient,
             balance
                 .checked_add(amount)
-                .ok_or(ApiError::User(FailureCode::Two as u16))
+                .ok_or(Error::UniswapV2CoreERC20OverFlow)
                 .unwrap_or_revert(),
         );
         data::set_total_supply(
             data::total_supply()
                 .checked_add(amount)
-                .ok_or(ApiError::User(FailureCode::Two as u16))
+                .ok_or(Error::UniswapV2CoreERC20OverFlow)
                 .unwrap_or_revert(),
         );
         let address_0: Key = Key::from_formatted_str(
@@ -318,13 +328,13 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
                 &recipient,
                 balance
                     .checked_sub(amount)
-                    .ok_or(ApiError::User(FailureCode::Three as u16))
+                    .ok_or(Error::UniswapV2CoreERC20UnderFlow3)
                     .unwrap_or_revert(),
             );
             data::set_total_supply(
                 data::total_supply()
                     .checked_sub(amount)
-                    .ok_or(ApiError::User(FailureCode::Three as u16))
+                    .ok_or(Error::UniswapV2CoreERC20UnderFlow4)
                     .unwrap_or_revert(),
             );
             let address_0: Key = Key::from_formatted_str(
@@ -364,14 +374,14 @@ pub trait ERC20<Storage: ContractStorage>: ContractContext<Storage> {
             &sender,
             sender_balance
                 .checked_sub(amount)
-                .ok_or(ApiError::User(FailureCode::Three as u16))
+                .ok_or(Error::UniswapV2CoreERC20UnderFlow5)
                 .unwrap_or_revert(),
         );
         balances.set(
             &recipient,
             recipient_balance
                 .checked_add(amount)
-                .ok_or(ApiError::User(FailureCode::Two as u16))
+                .ok_or(Error::UniswapV2CoreERC20OverFlow)
                 .unwrap_or_revert(),
         );
         self.emit(&ERC20Event::Transfer {

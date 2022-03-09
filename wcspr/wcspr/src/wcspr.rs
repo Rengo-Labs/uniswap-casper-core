@@ -1,19 +1,26 @@
-use crate::data::{self, Allowances, Balances};
-use alloc::string::String;
-
-use casper_contract::{contract_api::system, unwrap_or_revert::UnwrapOrRevert};
+use crate::alloc::string::ToString;
+use crate::data::{self, Allowances, Balances, WcsprEvents};
+use alloc::{collections::BTreeMap, string::String, vec::Vec};
+use casper_contract::{
+    contract_api::{storage, system},
+    unwrap_or_revert::UnwrapOrRevert,
+};
 use casper_types::{ApiError, ContractPackageHash, Key, URef, U256, U512};
 use contract_utils::{ContractContext, ContractStorage};
 
-/// Enum for FailureCode, It represents codes for different smart contract errors.
 #[repr(u16)]
-pub enum FailureCode {
-    /// 65,536 for (UniswapV2: OVERFLOW)
-    Zero = 0,
-    /// 65,537 for (UniswapV2: UNDERFLOW)
-    One,
+pub enum Error {
+    /// 65,540 for UniswapV2CoreWCSPROverFlow
+    UniswapV2CoreWCSPROverFlow = 4,
+    /// 65,541 for UniswapV2CoreWCSPRUnderFlow
+    UniswapV2CoreWCSPRUnderFlow = 5,
 }
 
+impl From<Error> for ApiError {
+    fn from(error: Error) -> ApiError {
+        ApiError::User(error as u16)
+    }
+}
 pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
     fn init(
         &mut self,
@@ -33,6 +40,7 @@ pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
 
         Balances::init();
         Allowances::init();
+        data::set_totalsupply(0.into());
     }
 
     fn balance_of(&mut self, owner: Key) -> U256 {
@@ -49,6 +57,11 @@ pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
 
     fn _approve(&mut self, owner: Key, spender: Key, amount: U256) {
         Allowances::instance().set(&owner, &spender, amount);
+        self.emit(&WcsprEvents::Approval {
+            owner: owner,
+            spender: spender,
+            value: amount,
+        });
     }
 
     fn allowance(&mut self, owner: Key, spender: Key) -> U256 {
@@ -65,7 +78,7 @@ pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
 
         let new_allowance: U256 = spender_allowance
             .checked_add(amount)
-            .ok_or(ApiError::User(FailureCode::Zero as u16))
+            .ok_or(Error::UniswapV2CoreWCSPROverFlow)
             .unwrap_or_revert();
 
         if new_allowance <= owner_balance && owner != spender {
@@ -85,7 +98,7 @@ pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
 
         let new_allowance: U256 = spender_allowance
             .checked_sub(amount)
-            .ok_or(ApiError::User(FailureCode::One as u16))
+            .ok_or(Error::UniswapV2CoreWCSPRUnderFlow)
             .unwrap_or_revert();
 
         if new_allowance >= 0.into() && new_allowance < spender_allowance && owner != spender {
@@ -103,7 +116,7 @@ pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
             let spender_allowance: U256 = allowances.get(&owner, &self.get_caller());
             let new_allowance: U256 = spender_allowance
                 .checked_sub(amount)
-                .ok_or(ApiError::User(FailureCode::One as u16))
+                .ok_or(Error::UniswapV2CoreWCSPRUnderFlow)
                 .unwrap_or_revert();
             if new_allowance >= 0.into()
                 && new_allowance < spender_allowance
@@ -115,6 +128,7 @@ pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
                 return Err(4);
             }
         }
+
         ret
     }
 
@@ -145,13 +159,27 @@ pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
                 &caller,
                 balance
                     .checked_add(amount_to_transfer_u256)
-                    .ok_or(ApiError::User(FailureCode::Zero as u16))
+                    .ok_or(Error::UniswapV2CoreWCSPROverFlow)
                     .unwrap_or_revert(),
             );
+
+            // update total supply
+            data::set_totalsupply(
+                data::get_totalsupply()
+                    .checked_add(amount_to_transfer_u256)
+                    .ok_or(Error::UniswapV2CoreWCSPROverFlow)
+                    .unwrap_or_revert(),
+            );
+
+            self.emit(&WcsprEvents::Deposit {
+                src_purse: purse,
+                amount: amount_to_transfer,
+            });
         } else {
             return Err(2); // insufficient balance
                            // runtime::revert(MintError::InsufficientFunds);
         }
+
         Ok(())
     }
 
@@ -183,12 +211,26 @@ pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
                 &caller,
                 balance
                     .checked_sub(cspr_amount_u256)
-                    .ok_or(ApiError::User(FailureCode::One as u16))
+                    .ok_or(Error::UniswapV2CoreWCSPRUnderFlow)
                     .unwrap_or_revert(),
-            )
+            );
+
+            // update total supply
+            data::set_totalsupply(
+                data::get_totalsupply()
+                    .checked_sub(cspr_amount_u256)
+                    .ok_or(Error::UniswapV2CoreWCSPROverFlow)
+                    .unwrap_or_revert(),
+            );
+
+            self.emit(&WcsprEvents::Withdraw {
+                recipient_purse: recipient_purse,
+                amount: amount,
+            });
         } else {
             return Err(2); // insufficient Balance
         }
+
         Ok(())
     }
 
@@ -208,16 +250,21 @@ pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
             &sender,
             sender_balance
                 .checked_sub(amount)
-                .ok_or(ApiError::User(FailureCode::One as u16))
+                .ok_or(Error::UniswapV2CoreWCSPRUnderFlow)
                 .unwrap_or_revert(),
         );
         balances.set(
             &recipient,
             recipient_balance
                 .checked_add(amount)
-                .ok_or(ApiError::User(FailureCode::Zero as u16))
+                .ok_or(Error::UniswapV2CoreWCSPROverFlow)
                 .unwrap_or_revert(),
         );
+        self.emit(&WcsprEvents::Transfer {
+            from: sender,
+            to: recipient,
+            value: amount,
+        });
         Ok(())
     }
 
@@ -235,5 +282,62 @@ pub trait WCSPR<Storage: ContractStorage>: ContractContext<Storage> {
 
     fn get_package_hash(&mut self) -> ContractPackageHash {
         data::get_package_hash()
+    }
+
+    // Events
+    fn emit(&mut self, wcspr_event: &WcsprEvents) {
+        let mut events = Vec::new();
+        let package = data::get_package_hash();
+
+        match wcspr_event {
+            WcsprEvents::Approval {
+                owner,
+                spender,
+                value,
+            } => {
+                let mut event = BTreeMap::new();
+                event.insert("contract_package_hash", package.to_string());
+                event.insert("event_type", wcspr_event.type_name());
+                event.insert("owner", owner.to_string());
+                event.insert("spender", spender.to_string());
+                event.insert("value", value.to_string());
+                events.push(event);
+            }
+
+            WcsprEvents::Transfer { from, to, value } => {
+                let mut event = BTreeMap::new();
+                event.insert("contract_package_hash", package.to_string());
+                event.insert("event_type", wcspr_event.type_name());
+                event.insert("from", from.to_string());
+                event.insert("to", to.to_string());
+                event.insert("value", value.to_string());
+                events.push(event);
+            }
+
+            WcsprEvents::Deposit { src_purse, amount } => {
+                let mut event = BTreeMap::new();
+                event.insert("contract_package_hash", package.to_string());
+                event.insert("event_type", wcspr_event.type_name());
+                event.insert("source_purse", src_purse.to_string());
+                event.insert("amount", amount.to_string());
+                events.push(event);
+            }
+
+            WcsprEvents::Withdraw {
+                recipient_purse,
+                amount,
+            } => {
+                let mut event = BTreeMap::new();
+                event.insert("contract_package_hash", package.to_string());
+                event.insert("event_type", wcspr_event.type_name());
+                event.insert("recipient_purse", recipient_purse.to_string());
+                event.insert("amount", amount.to_string());
+                events.push(event);
+            }
+        };
+
+        for event in events {
+            let _: URef = storage::new_uref(event);
+        }
     }
 }

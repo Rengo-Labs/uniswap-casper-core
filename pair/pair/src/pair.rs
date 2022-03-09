@@ -111,35 +111,39 @@ impl PAIREvent {
 #[repr(u16)]
 pub enum FailureCode {
     /// 65,536 for (UniswapV2: EXPIRED)
-    Zero = 0,
+    Twelve = 12,
     /// 65,537 for (UniswapV2: FORBIDDEN)
-    One,
-    /// 65,538 for (signature verification failed)
-    Two,
-    /// 65,539 for (UniswapV2: OVERFLOW)
-    Three,
-    /// 65,540 for (UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT)
-    Four,
-    /// 65,541 for (UniswapV2: INSUFFICIENT_LIQUIDITY)
-    Five,
-    /// 65,542 for (UniswapV2: INVALID_TO)
-    Six,
-    /// 65,543 for (UniswapV2: INSUFFICIENT_INPUT_AMOUNT)
-    Seven,
-    /// 65,544 for (UniswapV2: K)
-    Eight,
-    /// 65,545 for (UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED)
-    Nine,
-    /// 65,546 for (UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED)
-    Ten,
-    /// 65,547 for (UniswapV2: OVERFLOW)
-    Eleven,
-    /// 65,548 for (UniswapV2: UNDERFLOW)
-    Twelve,
-    /// 65,549 for (UniswapV2: DENOMINATOR IS ZERO)
     Thirteen,
-    /// 65,550 for (UniswapV2: LOCKED)
+    /// 65,538 for (signature verification failed)
     Fourteen,
+    /// 65,539 for (UniswapV2: OVERFLOW)
+    Fifteen,
+    /// 65,540 for (UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT)
+    Sixteen,
+    /// 65,541 for (UniswapV2: INSUFFICIENT_LIQUIDITY)
+    Seventeen,
+    /// 65,542 for (UniswapV2: INVALID_TO)
+    Eighteen,
+    /// 65,543 for (UniswapV2: INSUFFICIENT_INPUT_AMOUNT)
+    Ninteen,
+    /// 65,544 for (UniswapV2: K)
+    Twenty,
+    /// 65,545 for (UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED)
+    TwentyOne,
+    /// 65,546 for (UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED)
+    TwentyTwo,
+    /// 65,547 for (UniswapV2: OVERFLOW)
+    TwentyThree,
+    /// 65,548 for (UniswapV2: UNDERFLOW)
+    TwentyFour,
+    /// 65,549 for (UniswapV2: DENOMINATOR IS ZERO)
+    TwentyFive,
+    /// 65,550 for (UniswapV2: LOCKED)
+    TwentySix,
+    /// 65,551 for (UniswapV2: UNDERFLOW)
+    TwentySeven,
+    /// 65,552 for (UniswapV2: OVERFLOW)
+    TwentyEight,
 }
 
 pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
@@ -225,7 +229,7 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
 
         let new_allowance: U256 = spender_allowance
             .checked_add(amount)
-            .ok_or(ApiError::User(FailureCode::Zero as u16))
+            .ok_or(ApiError::User(FailureCode::Twelve as u16))
             .unwrap_or_revert();
 
         if new_allowance <= owner_balance && owner != spender {
@@ -245,7 +249,7 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
 
         let new_allowance: U256 = spender_allowance
             .checked_sub(amount)
-            .ok_or(ApiError::User(FailureCode::One as u16))
+            .ok_or(ApiError::User(FailureCode::Thirteen as u16))
             .unwrap_or_revert();
 
         if new_allowance >= 0.into() && new_allowance < spender_allowance && owner != spender {
@@ -263,7 +267,7 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
             let spender_allowance: U256 = allowances.get(&owner, &self.get_caller());
             let new_allowance: U256 = spender_allowance
                 .checked_sub(amount)
-                .ok_or(ApiError::User(FailureCode::One as u16))
+                .ok_or(ApiError::User(FailureCode::Thirteen as u16))
                 .unwrap_or_revert();
             if new_allowance >= 0.into()
                 && new_allowance < spender_allowance
@@ -286,7 +290,7 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
         let lock = data::get_lock();
         if lock != 0 {
             //UniswapV2: Locked
-            runtime::revert(ApiError::User(FailureCode::Fourteen as u16));
+            runtime::revert(ApiError::User(FailureCode::TwentySix as u16));
         }
         data::set_lock(1);
         let token0: Key = self.get_token0();
@@ -346,7 +350,7 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
         let lock = data::get_lock();
         if lock != 0 {
             //UniswapV2: Locked
-            runtime::revert(ApiError::User(FailureCode::Fourteen as u16));
+            runtime::revert(ApiError::User(FailureCode::TwentySix as u16));
         }
         data::set_lock(1);
         let token0: Key = self.get_token0();
@@ -504,23 +508,23 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
                             });
                         } else {
                             //UniswapV2: K
-                            runtime::revert(ApiError::User(FailureCode::Eight as u16));
+                            runtime::revert(ApiError::User(FailureCode::Twenty as u16));
                         }
                     } else {
                         //UniswapV2: INSUFFICIENT_INPUT_AMOUNT
-                        runtime::revert(ApiError::User(FailureCode::Seven as u16));
+                        runtime::revert(ApiError::User(FailureCode::Ninteen as u16));
                     }
                 } else {
                     //UniswapV2: INVALID_TO
-                    runtime::revert(ApiError::User(FailureCode::Six as u16));
+                    runtime::revert(ApiError::User(FailureCode::Eighteen as u16));
                 }
             } else {
                 //UniswapV2: INSUFFICIENT_LIQUIDITY
-                runtime::revert(ApiError::User(FailureCode::Five as u16));
+                runtime::revert(ApiError::User(FailureCode::Seventeen as u16));
             }
         } else {
             //UniswapV2: INSUFFICIENT_OUTPUT_AMOUNT
-            runtime::revert(ApiError::User(FailureCode::Four as u16));
+            runtime::revert(ApiError::User(FailureCode::Sixteen as u16));
         }
     }
 
@@ -623,11 +627,11 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
                 });
             } else {
                 //signature verification failed
-                runtime::revert(ApiError::User(FailureCode::Two as u16));
+                runtime::revert(ApiError::User(FailureCode::Fourteen as u16));
             }
         } else {
             //deadline is equal to or greater than blocktime
-            runtime::revert(ApiError::User(FailureCode::Zero as u16));
+            runtime::revert(ApiError::User(FailureCode::Twelve as u16));
         }
     }
 
@@ -638,13 +642,13 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
             &recipient,
             balance
                 .checked_add(amount)
-                .ok_or(ApiError::User(FailureCode::Eleven as u16))
+                .ok_or(ApiError::User(FailureCode::TwentyThree as u16))
                 .unwrap_or_revert(),
         );
         data::set_total_supply(
             self.total_supply()
                 .checked_add(amount)
-                .ok_or(ApiError::User(FailureCode::Eleven as u16))
+                .ok_or(ApiError::User(FailureCode::TwentyThree as u16))
                 .unwrap_or_revert(),
         );
         let address_0: Key = Key::from_formatted_str(
@@ -668,13 +672,13 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
                 &recipient,
                 balance
                     .checked_sub(amount)
-                    .ok_or(ApiError::User(FailureCode::Twelve as u16))
+                    .ok_or(ApiError::User(FailureCode::TwentyFour as u16))
                     .unwrap_or_revert(),
             );
             data::set_total_supply(
                 self.total_supply()
                     .checked_sub(amount)
-                    .ok_or(ApiError::User(FailureCode::Twelve as u16))
+                    .ok_or(ApiError::User(FailureCode::TwentyFour as u16))
                     .unwrap_or_revert(),
             );
             let address_0: Key = Key::from_formatted_str(
@@ -715,14 +719,14 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
             &sender,
             sender_balance
                 .checked_sub(amount)
-                .ok_or(ApiError::User(FailureCode::Twelve as u16))
+                .ok_or(ApiError::User(FailureCode::TwentyFour as u16))
                 .unwrap_or_revert(),
         );
         balances.set(
             &recipient,
             recipient_balance
                 .checked_add(amount)
-                .ok_or(ApiError::User(FailureCode::Eleven as u16))
+                .ok_or(ApiError::User(FailureCode::TwentyThree as u16))
                 .unwrap_or_revert(),
         );
         let eventpair: Key = Key::from(data::get_hash());
@@ -808,14 +812,22 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
             "balance_of",
             runtime_args! {"owner" => pair_contract_hash2},
         );
-        let amount0: U256 = balance0 - U256::from(reserve0.as_u128());
-        let amount1: U256 = balance1 - U256::from(reserve1.as_u128());
-        let fee_on: bool = self.mint_fee(reserve1, reserve0);
+        let amount0: U256 = balance0
+            .checked_sub(U256::from(reserve0.as_u128()))
+            .ok_or(ApiError::User(FailureCode::TwentySeven as u16))
+            .unwrap_or_revert();
+        let amount1: U256 = balance1
+            .checked_sub(U256::from(reserve1.as_u128()))
+            .ok_or(ApiError::User(FailureCode::TwentySeven as u16))
+            .unwrap_or_revert();
+        let fee_on: bool = self.mint_fee(reserve0, reserve1);
         let total_supply: U256 = self.total_supply(); // gas savings, must be defined here since totalSupply can update in mint_fee
         let minimum_liquidity: U256 = data::get_minimum_liquidity();
         let mut liquidity: U256 = 0.into();
-        if total_supply == liquidity {
-            liquidity = self.sqrt((amount0 * amount1) - minimum_liquidity);
+        if total_supply == 0.into() {
+            liquidity = self.sqrt(amount0 * amount1).checked_sub(U256::from(minimum_liquidity.as_u128()))
+            .ok_or(ApiError::User(FailureCode::TwentyEight as u16))
+            .unwrap_or_revert();
             self.mint(
                 Key::from_formatted_str(
                     "account-hash-0000000000000000000000000000000000000000000000000000000000000000",
@@ -846,7 +858,7 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
             liquidity // return liquidity
         } else {
             //UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED
-            runtime::revert(ApiError::User(FailureCode::Nine as u16));
+            runtime::revert(ApiError::User(FailureCode::TwentyOne as u16));
         }
     }
 
@@ -881,7 +893,8 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
         let amount1: U256 = (liquidity * balance1) / total_supply;
         if amount0 > 0.into() && amount1 > 0.into() {
             self.burn(Key::from(data::get_package_hash()), liquidity);
-
+            // set_key("amount0",amount0);
+            // set_key("amount1",amount1);
             let _ret: Result<(), u32> = runtime::call_contract(
                 token0_hash_add,
                 "transfer",
@@ -914,12 +927,12 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
             let balance0: U256 = runtime::call_contract(
                 token0_hash_add,
                 "balance_of",
-                runtime_args! {"owner" => data::get_hash()},
+                runtime_args! {"owner" => Key::from(data::get_package_hash())},
             );
             let balance1: U256 = runtime::call_contract(
                 token1_hash_add,
                 "balance_of",
-                runtime_args! {"owner" => data::get_hash()},
+                runtime_args! {"owner" => Key::from(data::get_package_hash())},
             );
             self.update(balance0, balance1, reserve0, reserve1);
             if fee_on {
@@ -939,7 +952,7 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
             (amount0, amount1)
         } else {
             //UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED
-            runtime::revert(ApiError::User(FailureCode::Ten as u16));
+            runtime::revert(ApiError::User(FailureCode::TwentyTwo as u16));
         }
     }
 
@@ -979,7 +992,7 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
                         }
                     } else {
                         //UniswapV2: DENOMINATOR IS ZERO
-                        runtime::revert(ApiError::User(FailureCode::Thirteen as u16));
+                        runtime::revert(ApiError::User(FailureCode::TwentyFive as u16));
                     }
                 }
             }
@@ -996,7 +1009,7 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
             data::set_token1(token1);
         } else {
             //(UniswapV2: FORBIDDEN)
-            runtime::revert(ApiError::User(FailureCode::One as u16));
+            runtime::revert(ApiError::User(FailureCode::Thirteen as u16));
         }
     }
 
@@ -1091,7 +1104,7 @@ pub trait PAIR<Storage: ContractStorage>: ContractContext<Storage> {
             });
         } else {
             //UniswapV2: OVERFLOW
-            runtime::revert(ApiError::User(FailureCode::Three as u16));
+            runtime::revert(ApiError::User(FailureCode::Fifteen as u16));
         }
     }
     fn emit(&mut self, pair_event: &PAIREvent) {
