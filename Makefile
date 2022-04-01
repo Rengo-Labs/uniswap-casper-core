@@ -1,4 +1,4 @@
-uckniswap_core_directory = ./
+uniswap_core_directory = ./
 
 erc20_contract = ${uniswap_core_directory}erc20/
 factory_contract = ${uniswap_core_directory}factory/
