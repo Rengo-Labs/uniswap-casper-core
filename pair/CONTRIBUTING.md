@@ -18,7 +18,7 @@ If you have feature enhancements or other requests, please feel free to file iss
 
 ## Contributing to Uniswap V2 Core - Casper Blockchain
 
-All contributions to this repository from September 9, 2021 on are considered to be licensed under MIT License.
+All contributions to this repository from September 9, 2021 on are considered to be licensed under GNU License.
 
 Workflow for bug fixes:
 * Check open issues and unmerged pull requests to make sure the topic is not already covered elsewhere
